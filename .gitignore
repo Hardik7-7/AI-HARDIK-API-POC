@@ -2,12 +2,6 @@
 .env
 *.env
 
-# Sensitive inputs — don't commit real swagger docs or stories
-inputs/swagger/*.json
-inputs/swagger/*.yaml
-inputs/swagger/*.yml
-inputs/stories/*.md
-inputs/stories/*.txt
 
 # Keep the example placeholders
 !inputs/swagger/example_api.json
