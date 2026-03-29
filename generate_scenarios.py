@@ -36,10 +36,11 @@ def parse_args() -> argparse.Namespace:
         help="Path to Swagger/OpenAPI file (.json or .yaml) or live HTTP URL.",
     )
     parser.add_argument(
-        "--story", "-t",
+        "--stories", "-t",
         required=True,
+        nargs="+",
         metavar="PATH",
-        help="Path to the user story file (.md or .txt).",
+        help="Path(s) to the user story file(s) (.md or .txt).",
     )
     parser.add_argument(
         "--skill",
@@ -57,13 +58,12 @@ def main() -> None:
         from src.parsers.swagger_parser import load_swagger, swagger_to_text
         from pathlib import Path
 
-        story_stem = Path(args.story).stem
-        output_path = f"output/scenarios/{story_stem}.json"
+        output_path = "output/scenarios/all_scenarios.json"
 
         console.print()
         console.print("[bold]AI Backend Test Automation — Phase 1: Scenario Generation[/bold]")
         console.print(f"  Swagger : {args.swagger}")
-        console.print(f"  Story   : {args.story}")
+        console.print(f"  Stories : {', '.join(args.stories)}")
         console.print(f"  Skill   : {args.skill}")
         console.print(f"  Output  : {output_path}")
         console.print()
@@ -74,7 +74,7 @@ def main() -> None:
 
         generate_scenarios(
             api_spec=api_text,
-            story_path=args.story,
+            story_paths=args.stories,
             skill_path=args.skill,
             output_path=output_path,
         )

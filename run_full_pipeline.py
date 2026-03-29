@@ -23,7 +23,7 @@ def parse_args() -> argparse.Namespace:
         description="Run Full Pipeline: Generate Scenarios -> Sheets Sync -> Generate Tests -> Run & Heal",
     )
     parser.add_argument("--swagger", "-s", required=True, help="Path to Swagger/OpenAPI file")
-    parser.add_argument("--story", "-t", required=True, help="Path to user story file")
+    parser.add_argument("--stories", "-t", required=True, nargs="+", help="Path(s) to user story file(s)")
     parser.add_argument("--skill", default="skills/api_testing_skill.md", help="Path to skill file")
     return parser.parse_args()
 
@@ -36,9 +36,9 @@ def main():
     cmd1 = [
         sys.executable, "generate_scenarios.py",
         "--swagger", args.swagger,
-        "--story", args.story,
-        "--skill", args.skill
-    ]
+        "--skill", args.skill,
+        "--stories"
+    ] + args.stories
     res1 = subprocess.run(cmd1)
     if res1.returncode != 0:
         console.print("[bold red]Phase 1 failed. Aborting pipeline.[/bold red]")

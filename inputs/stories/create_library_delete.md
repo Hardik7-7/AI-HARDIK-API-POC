@@ -1,0 +1,1 @@
+Login to http://fresh-test.corp.coriolis.in/ using username "colama" and password "coriolis" and then create a library image of x86_64 architecture. After that delete that image. Generate only 1 testcase.

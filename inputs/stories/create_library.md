@@ -1,3 +1,0 @@
-# User Story: Example Feature
-
-Login to http://fresh-test.corp.coriolis.in/ using username "colama" and password "coriolis" and then create a library image. Deploy using that library image , Wait till Deploy Task is completed by Polling the Task. After that take a snapshot on the deployed machine and wait for snapshot to complete by polling.For cleanup, first delete the machine and wait for it to complete then clean both the libraries the new snapshotted one and the original one we created and in that sequence only. Generate only 1 testcase positive.

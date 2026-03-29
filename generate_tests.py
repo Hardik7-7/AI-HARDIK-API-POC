@@ -56,17 +56,16 @@ def main() -> None:
             console.print("[yellow]No 'output/scenarios' directory found. Run Phase 1 first.[/yellow]")
             sys.exit(0)
 
-        json_files = list(scenario_dir.glob("*.json"))
-        if not json_files:
-            console.print("[yellow]No JSON scenario files found in 'output/scenarios'.[/yellow]")
+        target_json = scenario_dir / "all_scenarios.json"
+        if not target_json.exists():
+            console.print("[yellow]No 'output/scenarios/all_scenarios.json' found. Run Phase 1 first.[/yellow]")
             sys.exit(0)
 
-        for json_file in json_files:
-            generate_tests(
-                test_cases_path=str(json_file),
-                skill_path=args.skill,
-                output_dir=output_dir,
-            )
+        generate_tests(
+            test_cases_path=str(target_json),
+            skill_path=args.skill,
+            output_dir=output_dir,
+        )
 
     except Exception as e:
         console.print(f"\n[bold red]Error:[/bold red] {e}")

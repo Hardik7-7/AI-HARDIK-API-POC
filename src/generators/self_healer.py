@@ -148,7 +148,7 @@ def run_and_heal(
                 
                 stem = test_file_path.stem
                 scenario_stem = stem[5:] if stem.startswith("test_") else stem
-                scenario_path = Path("output/scenarios") / f"{scenario_stem}.json"
+                scenario_path = Path("output/scenarios/all_scenarios.json")
                 
                 if scenario_path.exists():
                     try:
@@ -157,6 +157,7 @@ def run_and_heal(
                             test_cases_path=str(scenario_path),
                             skill_path=skill_path,
                             output_dir=test_dir,
+                            target_story=scenario_stem,
                         )
                         # Revert back to the original test script which was just regenerated
                         active_test_file = test_file_path
