@@ -1,0 +1,43 @@
+# Environment
+.env
+*.env
+
+# Sensitive inputs — don't commit real swagger docs or stories
+inputs/swagger/*.json
+inputs/swagger/*.yaml
+inputs/swagger/*.yml
+inputs/stories/*.md
+inputs/stories/*.txt
+
+# Keep the example placeholders
+!inputs/swagger/example_api.json
+!inputs/stories/example_story.md
+
+# Output (generated artifacts)
+output/scenarios/
+output/tests/
+output/mapped_apis.json
+output/reports/
+.pytest_cache/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
