@@ -30,7 +30,7 @@ def parse_args() -> argparse.Namespace:
 def main():
     args = parse_args()
     console.rule("[bold cyan]Starting Full End-to-End AI Pipeline[/bold cyan]")
-    
+
     # ── Step 1: Scenario Generation ─────────────────────────────────────────
     console.print("\n[bold blue]>>> [Step 1] Executing Phase 1: generate_scenarios.py[/bold blue]")
     cmd1 = [
@@ -48,23 +48,25 @@ def main():
     console.print("\n[bold blue]>>> [Step 2] Launching Google Sheets Review Pipeline...[/bold blue]")
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
     ROOT_DIR = os.path.dirname(CURRENT_DIR)
-    
+
     sheets_dir = os.path.join(ROOT_DIR, "AI-QA-Sheets-Integration")
-    
+
     # Intelligently adapt venv path for Windows vs Linux depending on where it's run
     if os.name == 'nt':
         venv_python = os.path.join(sheets_dir, ".venv", "Scripts", "python.exe")
     else:
         venv_python = os.path.join(sheets_dir, ".venv", "bin", "python3")
-        
+
     script_path = os.path.join(sheets_dir, "main.py")
-    
+    scenarios_json = os.path.join(CURRENT_DIR, "output", "scenarios", "all_scenarios.json")
+
     if os.path.exists(script_path):
         try:
+            cmd_sheets = ["--input", scenarios_json]
             if os.path.exists(venv_python):
-                subprocess.run([venv_python, script_path], cwd=sheets_dir, check=True)
+                subprocess.run([venv_python, script_path] + cmd_sheets, cwd=sheets_dir, check=True)
             else:
-                subprocess.run([sys.executable, script_path], cwd=sheets_dir, check=True)
+                subprocess.run([sys.executable, script_path] + cmd_sheets, cwd=sheets_dir, check=True)
         except subprocess.CalledProcessError as e:
             console.print(f"[bold red]Sheets sync failed with exit code {e.returncode}. Aborting pipeline.[/bold red]")
             sys.exit(e.returncode)
@@ -78,7 +80,7 @@ def main():
     if res23.returncode != 0:
         console.print("\n[bold red]Pipeline complete but some tests failed to heal.[/bold red]")
         sys.exit(res23.returncode)
-        
+
     console.print("\n[bold green]✓ Full Pipeline complete successfully![/bold green]")
     sys.exit(0)
 
