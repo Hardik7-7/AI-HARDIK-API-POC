@@ -98,7 +98,7 @@ Function Parameters:
     - sync (boolean, optional): Whether the deployment should be synchronous.
     - vnc_password (string, optional): VNC password for the deployed machine.
     - name (string, optional): Name of the deployed machine (cannot contain `/`).
-    - server_list (array of strings, optional): List of server names.
+    - server_list (array of strings, optional): List of server hostnames.
     - group_list (array of strings, optional): List of group names.
     - mac_list (array of strings, optional): List of MAC addresses.
     - tag_list (array of strings, optional): List of tags for the deployment.
@@ -120,7 +120,7 @@ Returns:
         - Bulk deploy (count > 1): Response is an object:
             - bulk_job_uuid: Monitoring task UUID for the bulk deploy (can be null).
             - deployments: List of DeployedMachine objects (same shape as single deploy).
-    * (Status 400): Invalid parameters provided.
+    * (Status 400): Invalid parameters provided or Server in Offline or Maintenance state.
     * (Status 401): Unauthorized, user not logged in.
     * (Status 403): Forbidden, User does not have permission to deploy.
     * (Status 404): Machine UUID not found.
@@ -265,4 +265,144 @@ Raises:
 * Exception: Any unexpected exceptions.
 * ValidationError:
     - Image with the specified UUID does not exist.
+"""
+
+get_server_list_api_documentation = """
+HTTP Method = GET
+Path = /servers/rest/list/
+Function Description:
+* This API allows authenticated users to retrieve a list of servers.
+* It supports advanced filtering, searching, ordering, and pagination.
+
+Function Parameters:
+* URL Parameters:
+    - uuid (string, optional): Filter by server UUID.
+    - total_disk (number, optional): Filter by the server's total disk size.
+    - total_ram (number, optional): Filter by the server's total RAM size.
+    - group_id (string, optional): Filter servers that belong to a specific group (by ID or name).
+    - exclude_group_id (string, optional): Exclude servers from a specific group.
+    - hostname (string, optional): Case-insensitive partial match for server hostname.
+    - status (string, optional): Comma-separated list of server statuses or installation stages to filter by[Excludes 'Installed' stage.].
+    - disk_health (string, optional): Comma-separated list of disk health values to filter by.
+        * Accepted values include: Healthy, Warning, Critical.
+        * Internally maps to disk usage percentage thresholds.
+    - ip (string, optional): Case-insensitive partial match for server IP address.
+    - replicating_db (string, optional): Filter based on whether the server is replicating the database.
+        * Values: "true" or "false"
+    - arch (string, optional): Filter by system architecture. Case-insensitive exact match.
+    - scope (string, optional): Scope of server access. [Choices:"my", "all", "public"]
+    - search (string, optional): Case-insensitive search across multiple fields.
+        * Searches across: hostname, total_disk, total_ram, ip, hvm_type, arch.
+    - ordering (string, optional): Field to order results by. Prefix with "-" for descending order.
+        * Valid fields: ip, hostname, hvm_type, used_disk, used_ram, arch.
+    - page (integer, optional): Page number for paginated result.
+    - page_size (integer, optional): Number of results per page.
+
+Returns:
+* Response:
+    * (Status 200): Returns a paginated list of server objects in JSON format.
+    * (Status 401): Unauthorized - User is not authenticated.
+    * (Status 404): Not Found - The requested page does not exist.
+        - This may occur if the page number is invalid (e.g., negative, zero, or beyond the total number of pages).
+
+Raises:
+* Exception: Any unexpected exceptions.
+"""
+
+server_bulkops_documentation = """
+Path = /servers/rest/bulkops/
+HTTP Method = POST
+Function Description:
+* This API performs bulk operations on servers.
+
+Function Parameters:
+* Request Body:
+    * op (required): A String that specifies the type of operation to perform.
+                            All these operations are case-sensitive and must be provided in lowercase letters. For example:
+        - `syncrepo`: Starts Syncrepo (Localizing Public Image Layers and Nvrams) operation of provided Server.
+        - `delete`: Deleting the provided server.
+        - `upgrade`: Upgrades the provided server which should be a Managed Host.
+        - `lock_server`: Changes the state of server to Locked.
+        - `unlock_server`: Unlocks the server which is in Locked state.
+        - `mark_for_maintenance`: Changes the state of server to  Maintenance.
+        - `unmark_for_maintenance`: Unmarks the server which is in Maintenance state.
+
+    - server_list (array of strings, required): A list of server uuids.
+    - credentials(optional): Username and Password (Only required for Upgrade operation)
+
+Returns:
+* Response:
+    * (Status 202): Operation completed successfully.
+    * (Status 207): Either all or some operations failed
+    * (Status 400):
+        - Invalid input data or missing required fields.
+        - Any unexpected Exception.
+    * (Status 401): Unauthorized, user not logged in.
+
+Raises:
+* Exception: Any unexpected exceptions.
+* ValidationError:
+    - Server List is Empty
+    - Provided Servers are not in List datatype
+    - Unsupported Operation
+"""
+
+library_list_documentation = """
+Path = /library/rest/viewmachinelist/
+HTTP Method = GET
+Function Description:
+* This API retrieves a list of libraries based on various filters and query parameters.
+
+Function Parameters:
+* URL Parameter:
+    - uuid (string, optional): Filters libraries whose UUID contains the given string.
+    - name (string, optional): Filters libraries whose name contains the given string.
+    - description (string, optional): Filters libraries whose description contains the given string.
+    - cpus (integer, optional): Filters libraries with the exact CPU count.
+    - ram (integer, optional): Filters libraries with the exact RAM size.
+    - ram_min (integer, optional): Filters libraries with at least the specified RAM size.
+    - ram_max (integer, optional): Filters libraries with at most the specified RAM size.
+    - hvm_type (string, optional): Filters libraries based on their HVM type.
+    - arch (string, optional): Filters libraries based on their architecture.
+    - boot (string, optional): Filters libraries based on their boot options.
+    - console (string, optional): Filters libraries based on their console type.
+    - hw_version (string, optional): Filters libraries based on their hardware version.
+    - is64 (boolean, optional): Filters libraries based on 64-bit architecture.
+    - is_uefi (boolean, optional): Filters libraries that support UEFI.
+    - owner (string, optional): Filters libraries based on owner username.
+    - disk_size (integer, optional): Filters libraries based on disk size.
+    - nvram_size (integer, optional): Filters libraries based on NVRAM size.
+    - nvram_uuid (string, optional): Filters libraries based on NVRAM UUID.
+    - disk_size_min (integer, optional): Filters libraries with at least the specified disk size.
+    - disk_size_max (integer, optional): Filters libraries with at most the specified disk size.
+    - disk_uuid (string, optional): Filters libraries based on disk UUID.
+    - mac (string, optional): Filters libraries based on MAC address.
+    - iso (string, optional): Filters libraries based on attached ISO image.
+    - created_start_date (datetime, optional): Filters libraries created after the specified date.
+    - created_end_date (datetime, optional): Filters libraries created before the specified date.
+    - created_date_range (string, optional): Filters libraries within a time range. Options: 'today', 'yesterday', 'week', 'month', 'year'.
+    - _sessionid (string, optional): Filters libraries based on session ID.
+    - _session_name (string, optional): Filters libraries based on session name.
+    - _session_created_on (datetime, optional): Filters libraries based on session creation date.
+    - tags (string, optional): Filters libraries based on associated tags.
+    - revision (integer, optional): Filters libraries based on revision number.
+    - compliance_state (string, optional): Filters libraries based on compliance status.
+    - search (string, optional): A search term to filter the results.
+    - ordering (string, optional): Field to use when ordering the results. Options: 'name', 'hw__ram', 'ctime', 'sw__os'.
+    - page (integer, optional): A page number within the paginated result set.
+    - page_size (integer, optional): Number of results to return per page.
+    - scope (string, optional): Defines the visibility scope. Options: 'all', 'my', 'public'.
+    - fetch_all_revs (boolean, optional): If 'true', returns all Libraries of any revision matching the filter.
+    - protected (boolean, optional): If 'true', returns all those Libraries that are marked protected.
+
+Returns:
+* Response:
+    * (Status 200): List of libraries successfully retrieved.
+    * (Status 400): Invalid request parameters.
+    * (Status 401): Unauthorized - User is not authenticated.
+
+Raises:
+* Exception: Any unexpected errors.
+* ValidationError:
+    - If an invalid query parameter is provided.
 """
