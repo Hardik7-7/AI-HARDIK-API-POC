@@ -86,7 +86,10 @@ def main() -> None:
         if args.test_file:
             test_files = [args.test_file]
         else:
-            test_files = [f.name for f in Path(args.test_dir).glob("test_*.py")]
+            test_files = [
+                f.name for f in Path(args.test_dir).glob("test_*.py")
+                if "_attempt_" not in f.name
+            ]
 
         if not test_files:
             console.print(f"[yellow]No test files found in {args.test_dir}. Run Phase 2 first.[/yellow]")
