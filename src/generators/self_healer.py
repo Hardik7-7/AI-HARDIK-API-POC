@@ -47,7 +47,7 @@ def run_and_heal(
     if max_attempts is None:
         max_attempts = int(os.getenv("SELF_HEAL_MAX_ATTEMPTS", str(DEFAULT_MAX_ATTEMPTS)))
 
-    console.rule("[bold red]Self-Healing Test Runner (Phase 3)[/bold red]")
+    console.rule("[bold cyan]Self-Healing Test Runner (Phase 3)[/bold cyan]")
     console.print(
         f"[dim]Test dir: {test_dir} | Max heal attempts: {max_attempts}[/dim]"
     )

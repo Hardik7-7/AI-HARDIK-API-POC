@@ -142,66 +142,6 @@ Each element in the array represents one test case. Steps within a test case can
 
 ---
 
-## SECTION: Prompt — API Mapping
-
-<!-- 
-  PROMPT TEMPLATE: api_mapping
-  Used by: src/generators/api_mapper.py
-  Purpose: Given the full swagger doc and a user story, identify the relevant API endpoints.
--->
-
-### PROMPT_START: api_mapping
-
-You are an expert API analyst. Your job is to read a Swagger/OpenAPI specification and identify which API endpoints are relevant to a given User Story.
-
-The user story may be written in plain human language — it may not mention exact URLs or method names.
-Your task is to intelligently map the intent of the user story to the correct endpoints.
-
----
-
-**PRODUCT CONTEXT:**
-{{PRODUCT_CONTEXT}}
-
----
-
-**USER STORY:**
-{{USER_STORY}}
-
----
-
-**SWAGGER / OPENAPI SPECIFICATION:**
-{{SWAGGER_CONTENT}}
-
----
-
-**YOUR TASK:**
-1. Identify all API endpoints from the Swagger spec that are relevant to the User Story above.
-2. For each relevant endpoint, extract its full definition including: path, method, summary, parameters, request body schema, and response schema.
-3. Return ONLY a valid JSON array — no explanation text, and absolutely NO markdown formatting or ```json block. Just the raw JSON array.
-
-Return format:
-[
-  {
-    "method": "POST",
-    "path": "/api/v1/resource",
-    "summary": "Create a new resource",
-    "parameters": [],
-    "request_body": {},
-    "responses": {
-      "201": { "description": "Created", "schema": {} },
-      "400": { "description": "Bad Request", "schema": {} }
-    },
-    "tags": ["resource"]
-  }
-]
-```
-
-Return ONLY the JSON array. No preamble, no explanation.
-
-### PROMPT_END: api_mapping
-
----
-
 ## SECTION: Prompt — Scenario Generation
 
 <!--
@@ -249,7 +189,7 @@ Rules:
 - URL HANDLING: Keep all 'endpoint' paths STRICTLY relative (e.g., `/api/v1/resource`). If the User Story provides a test host (e.g., an IP or domain), calculate the full Base URL by replacing `<test-host>` in the Base URL Pattern with that host but KEEP the port (e.g., `http://192.168.1.10:8086`). Place this derived URL in the top-level `base_url` field of the test case JSON.
 - AUTHENTICATION: Ensure every request step includes the correct authentication headers as defined in the Product Context.
 - REALISTIC DATA: Do not use generic strings like 'TestItem' or 'test_user'. Ensure all resource names, descriptions, and payload values are highly realistic and strictly relevant to the User Story context.
-- ASSERTIONS: When filling `expected.body_contains`, ONLY assert on stable unique identifiers (e.g. `id`, `uuid`) or deterministic fields like `status`. DO NOT assert on mutable strings like `name` or `description`, as the server might append suffixes (e.g. ` #1`) and cause tests to erroneously fail.
+- ASSERTIONS: When filling `expected.body_contains`, ONLY assert on stable unique identifiers (e.g. `id`, `uuid`) or deterministic fields like `status`. DO NOT assert on mutable strings like `name`, `description`, or specific error messages, as these are subject to change and cause tests to erroneously fail.
 - Return ONLY a valid JSON array. No explanation text, and absolutely NO markdown formatting or ```json block — raw JSON only.
 - Each test case must have: `id`, `title`, `description`, `tags`, `priority`, `steps`.
 - Steps must include complete `request` and `expected` objects.
@@ -300,6 +240,7 @@ Generate a complete, runnable Python pytest test file.
    - Never put bare `assert` statements in a `finally` block.
 8. Add clear assertion messages so failures are easy to debug.
 9. Keep all test functions in one file.
+10. **ASSERTION RULES**: ONLY assert on HTTP status codes. DO NOT assert on specific string error messages in the response body, as these are subject to change and can cause brittle tests.
 
 ### Coding Style Rules (strictly enforced):
 - **NO hallucinated imports.** Only import standard library or third-party packages you actually use.

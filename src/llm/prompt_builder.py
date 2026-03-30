@@ -63,7 +63,7 @@ class SkillFile:
         """Get a named prompt template and fill in all {{PLACEHOLDERS}}.
 
         Args:
-            template_name: One of: api_mapping, scenario_generation, code_generation, self_heal
+            template_name: One of: scenario_generation, code_generation, self_heal
             **kwargs: Placeholder values. Keys should match template placeholders (case-sensitive).
 
         Returns:
