@@ -2,7 +2,7 @@
 End-to-End Test Automation Pipeline (Phases 1, 2, 3 + Sheets Integration)
 
 Usage Example:
-  python run_full_pipeline.py --swagger inputs/swagger/api-doc.md --story inputs/stories/create_library.md
+  python run_full_pipeline.py --swagger inputs/swagger/swagger.json --story inputs/stories/create_library.md
 
 This script executes the entire lifecycle:
 1. Scenario Generation (extracts scenarios from story)

@@ -1,0 +1,1276 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API Documentation",
+    "version": "1.0.0",
+    "description": "Converted from api-doc.md"
+  },
+  "paths": {
+    "/library/rest/add/": {
+      "post": {
+        "summary": "Create a new Library Image",
+        "description": "This API creates a new Library Image (Machine) with the provided hardware configuration.\nNote: hvm_type is not accepted in the request; hypervisor is always KVM. Fields like revision, ctime, owner, state, compliance_state, tags, sw, cloned_from, consolidated_from are read-only and not applied on create.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "hw"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Library name. Must not contain '/' or '#'."
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the library."
+                  },
+                  "is_public": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Only Admin or Restricted group manager can create public images."
+                  },
+                  "localize_on_primary": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Only meaningful for public images."
+                  },
+                  "hw": {
+                    "type": "object",
+                    "description": "Hardware configuration.",
+                    "required": [
+                      "disks",
+                      "cdrom",
+                      "networks",
+                      "serialports"
+                    ],
+                    "properties": {
+                      "arch": {
+                        "type": "string",
+                        "default": "x86_64",
+                        "enum": [
+                          "x86_64",
+                          "aarch64"
+                        ],
+                        "description": "One of 'x86_64', 'aarch64'."
+                      },
+                      "cpus": {
+                        "type": "integer",
+                        "default": 4,
+                        "minimum": 1
+                      },
+                      "ram": {
+                        "type": "integer",
+                        "default": 1024,
+                        "minimum": 100
+                      },
+                      "boot": {
+                        "type": "string",
+                        "default": "hd",
+                        "enum": [
+                          "hd",
+                          "cdrom",
+                          "network"
+                        ]
+                      },
+                      "console": {
+                        "type": "string",
+                        "default": "vnc",
+                        "enum": [
+                          "vnc",
+                          "spice"
+                        ]
+                      },
+                      "hw_version": {
+                        "type": "string",
+                        "description": "Hardware version string."
+                      },
+                      "is_x64": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Indicates 64-bit mode."
+                      },
+                      "is_uefi": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Must be true for 'aarch64'."
+                      },
+                      "nvram": {
+                        "type": "object",
+                        "description": "Used only when is_uefi is true.",
+                        "properties": {
+                          "template": {
+                            "type": "string",
+                            "description": "NVRAM template path. Defaults to secure template for x86_64; defaults to AAVMF template for aarch64."
+                          }
+                        }
+                      },
+                      "disks": {
+                        "type": "array",
+                        "description": "Disk list. Provide this key even if empty (`[]`).",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "port",
+                            "type"
+                          ],
+                          "properties": {
+                            "port": {
+                              "type": "string",
+                              "description": "IDE ports hda-hdd, SATA sda-sdz, VIRTIO vda-vdz."
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "ide",
+                                "sata",
+                                "virtio"
+                              ]
+                            },
+                            "size": {
+                              "type": "integer",
+                              "default": 20,
+                              "minimum": 1,
+                              "description": "Disk size in GB (minimum 1)."
+                            },
+                            "format": {
+                              "type": "string",
+                              "enum": [
+                                "qcow2"
+                              ],
+                              "default": "qcow2",
+                              "description": "Only 'qcow2' is supported."
+                            },
+                            "is_boot": {
+                              "type": "boolean",
+                              "default": false
+                            },
+                            "boot_order": {
+                              "type": "integer",
+                              "description": "Must be unique across bootable disks. Required if is_boot is true."
+                            }
+                          }
+                        }
+                      },
+                      "cdrom": {
+                        "type": "array",
+                        "description": "Provide `[]` when no CD-ROMs are needed.",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "type"
+                          ],
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "ide",
+                                "sata",
+                                "virtio"
+                              ],
+                              "description": "ARM requires 'virtio'."
+                            },
+                            "iso": {
+                              "type": "string"
+                            },
+                            "is_boot": {
+                              "type": "boolean",
+                              "default": false
+                            },
+                            "boot_order": {
+                              "type": "integer",
+                              "description": "Must be unique across bootable cdroms. Required if is_boot is true."
+                            }
+                          }
+                        }
+                      },
+                      "networks": {
+                        "type": "array",
+                        "description": "Provide `[]` when no NICs are needed.",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "type",
+                            "model"
+                          ],
+                          "properties": {
+                            "mac": {
+                              "type": "string",
+                              "description": "Use 'auto' or omit to auto-generate; otherwise must match 'AA:BB:CC:DD:EE:FF'."
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "bridge",
+                                "host"
+                              ],
+                              "description": "Required. If 'bridge', segment must be 'Default Public Segment'. If 'host', segment must be 'HostOnly Segment'."
+                            },
+                            "model": {
+                              "type": "string",
+                              "enum": [
+                                "virtio",
+                                "e1000",
+                                "rtl8139"
+                              ],
+                              "description": "ARM requires 'virtio'."
+                            },
+                            "segment": {
+                              "type": "string",
+                              "description": "Segment (string, do NOT send an object). Must be 'Default Public Segment' for bridge and 'HostOnly Segment' for host."
+                            },
+                            "is_connected": {
+                              "type": "boolean",
+                              "default": true
+                            }
+                          }
+                        }
+                      },
+                      "serialports": {
+                        "type": "array",
+                        "description": "Provide `[]` when no serial ports are needed.",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "source_type": {
+                              "type": "string",
+                              "default": "pty"
+                            },
+                            "target_type": {
+                              "type": "string",
+                              "default": "isa-serial",
+                              "description": "Max 3 isa-serial ports total"
+                            },
+                            "source_path": {
+                              "type": "string"
+                            },
+                            "tcp_ip": {
+                              "type": "string"
+                            },
+                            "tcp_port": {
+                              "type": "integer"
+                            },
+                            "socket_mode": {
+                              "type": "string",
+                              "enum": [
+                                "bind",
+                                "connect"
+                              ]
+                            },
+                            "use_telnet": {
+                              "type": "boolean",
+                              "default": false
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Library successfully created. Response body is the full Library object. Library UUID is returned in the `uuid` field."
+          },
+          "400": {
+            "description": "Invalid request data or hardware validation errors."
+          },
+          "401": {
+            "description": "Unauthorized, user not logged in."
+          },
+          "403": {
+            "description": "Forbidden (e.g., trying to create a public image without required privileges)."
+          }
+        }
+      }
+    },
+    "/auth/": {
+      "post": {
+        "summary": "Obtain an authentication token",
+        "description": "This API is used to obtain an authentication token for a user.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "The username of the user requesting the token."
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "The password of the user requesting the token."
+                  },
+                  "key_name": {
+                    "type": "string",
+                    "description": "The name of the key associated with the user for token generation."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token obtained successfully."
+          },
+          "401": {
+            "description": "Unauthorized, Invalid username or password."
+          }
+        }
+      }
+    },
+    "/deploy/rest/deploy/{uuid}/": {
+      "post": {
+        "summary": "Deploy a new instance of a machine",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique identifier of the machine to be deployed."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "description": "Number of instances to deploy."
+                  },
+                  "sync": {
+                    "type": "boolean",
+                    "description": "Whether the deployment should be synchronous."
+                  },
+                  "vnc_password": {
+                    "type": "string",
+                    "description": "VNC password for the deployed machine."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the deployed machine (cannot contain `/`)."
+                  },
+                  "server_list": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of server hostnames."
+                  },
+                  "group_list": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of group names."
+                  },
+                  "mac_list": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of MAC addresses."
+                  },
+                  "tag_list": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "List of tags for the deployment."
+                  },
+                  "deploy_start": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to start the deployment immediately."
+                  },
+                  "reserve_data_disk": {
+                    "type": "boolean",
+                    "description": "Whether to reserve the data disk."
+                  },
+                  "timetolive": {
+                    "type": "integer",
+                    "description": "Time-to-live value for the deployment(in Seconds)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Machine deployed successfully. Single deploy returns a DeployedMachine object. Bulk deploy (count > 1) returns an object with bulk_job_uuid and a list of deployments.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "description": "Single deploy response",
+                      "properties": {
+                        "uuid": {
+                          "type": "string",
+                          "description": "Deployment UUID"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string"
+                        },
+                        "job_uuid": {
+                          "type": "string"
+                        },
+                        "server": {
+                          "type": "string"
+                        },
+                        "owner": {
+                          "type": "string"
+                        },
+                        "source_image_uuid": {
+                          "type": "string",
+                          "description": "UUID of the source Library Image used to deploy"
+                        },
+                        "machine": {
+                          "type": "object",
+                          "description": "Nested machine/library info"
+                        }
+                      },
+                      "required": [
+                        "uuid"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "description": "Bulk deploy response",
+                      "properties": {
+                        "bulk_job_uuid": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "Monitoring task UUID for the bulk deploy"
+                        },
+                        "deployments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "uuid": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "state": {
+                                "type": "string"
+                              },
+                              "job_uuid": {
+                                "type": "string"
+                              },
+                              "server": {
+                                "type": "string"
+                              },
+                              "owner": {
+                                "type": "string"
+                              },
+                              "source_image_uuid": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "uuid"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "deployments"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters provided or Server in Offline or Maintenance state."
+          },
+          "401": {
+            "description": "Unauthorized, user not logged in."
+          },
+          "403": {
+            "description": "Forbidden, User does not have permission to deploy."
+          },
+          "404": {
+            "description": "Machine UUID not found."
+          }
+        }
+      }
+    },
+    "/rtask/rest/detail/{uuid}/": {
+      "get": {
+        "summary": "Retrieve detailed information about a remote task",
+        "description": "Retrieves detailed tracking info. A RemoteTask object includes numeric ID, type, status (1:Created, 2:Delegated, 3:Started, ...), monitoring details, try_count, and child task uuids.",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique identifier of the remote task whose details are to be fetched."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A RemoteTask detail object including status (1..8) where 1,2,3,6,7 are Ongoing and 4,5,8 are Terminal."
+          },
+          "401": {
+            "description": "Unauthorized - User is not authenticated."
+          },
+          "404": {
+            "description": "Task not found for the provided UUID."
+          }
+        }
+      }
+    },
+    "/deploy/rest/snapshot/{uuid}/": {
+      "post": {
+        "summary": "Trigger a snapshot operation for the specified deployment UUID",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique identifier of the deployed machine."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "A description to be associated with the snapshot (Optional)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Snapshot task created successfully. Returns task descriptor containing task_uuid to poll for completion."
+          },
+          "400": {
+            "description": "Validation or state errors (e.g. description > 255 chars, invalid state)."
+          },
+          "401": {
+            "description": "Unauthorized - User is not logged in."
+          },
+          "403": {
+            "description": "Forbidden - User is not the owner, lacks manager rights or admin rights."
+          },
+          "404": {
+            "description": "Machine with the specified UUID was not found."
+          }
+        }
+      }
+    },
+    "/deploy/rest/delete/{uuid}/": {
+      "delete": {
+        "summary": "Delete a deployed machine by its UUID",
+        "description": "Allows deleting a deployed machine by its UUID. Optionally, it can delete the corresponding source library image as well if specified.",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lib_delete": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, deletes the deployment and its source library image."
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "If true, forces delete irrespective of current state."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Delete task created successfully. Returns task descriptor with task_uuid."
+          },
+          "400": {
+            "description": "Delete task could not be created (e.g. part of Island or protected)."
+          },
+          "401": {
+            "description": "Unauthorized, if no user is logged in."
+          },
+          "403": {
+            "description": "Forbidden, User is not Owner or doesn't have manager rights over the machine or has Admin rights."
+          }
+        }
+      }
+    },
+    "/library/rest/delete/{uuid}/": {
+      "delete": {
+        "summary": "Delete a Library Image",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique identifier of the Library Image to be deleted."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "full_tree": {
+                    "type": "boolean",
+                    "description": "A boolean value to determine wether to delete all the revisions of the passed UUID of Library Image."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content, the Image has been successfully deleted."
+          },
+          "400": {
+            "description": "Any unexpected Exception / ValidationError."
+          },
+          "401": {
+            "description": "Unauthorized, user not logged in."
+          },
+          "403": {
+            "description": "Forbidden, If User is not Owner/Admin or has manager privelleges over the Image."
+          },
+          "404": {
+            "description": "Image with provided uuid not found."
+          }
+        }
+      }
+    },
+    "/servers/rest/list/": {
+      "get": {
+        "summary": "Retrieve a list of servers",
+        "description": "This API allows authenticated users to retrieve a list of servers. It supports advanced filtering, searching, ordering, and pagination.",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "total_disk",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Filter by the server's total disk size."
+          },
+          {
+            "name": "total_ram",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Filter by the server's total RAM size."
+          },
+          {
+            "name": "group_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter servers that belong to a specific group."
+          },
+          {
+            "name": "exclude_group_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exclude servers from a specific group."
+          },
+          {
+            "name": "hostname",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive partial match for server hostname."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of server statuses or installation stages to filter by (Excludes 'Installed' stage)."
+          },
+          {
+            "name": "disk_health",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of disk health values to filter by (Healthy, Warning, Critical)."
+          },
+          {
+            "name": "ip",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive partial match for server IP address."
+          },
+          {
+            "name": "replicating_db",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "arch",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by system architecture. Case-insensitive exact match."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "my",
+                "all",
+                "public"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case-insensitive search across: hostname, total_disk, total_ram, ip, hvm_type, arch."
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ip",
+                "hostname",
+                "hvm_type",
+                "used_disk",
+                "used_ram",
+                "arch",
+                "-ip",
+                "-hostname",
+                "-hvm_type",
+                "-used_disk",
+                "-used_ram",
+                "-arch"
+              ]
+            },
+            "description": "Field to order results by. Prefix with '-' for descending order."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Page number for paginated result."
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Number of results per page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a paginated list of server objects in JSON format."
+          },
+          "401": {
+            "description": "Unauthorized - User is not authenticated."
+          },
+          "404": {
+            "description": "Not Found - The requested page does not exist."
+          }
+        }
+      }
+    },
+    "/servers/rest/bulkops/": {
+      "post": {
+        "summary": "Perform bulk operations on servers",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "op",
+                  "server_list"
+                ],
+                "properties": {
+                  "op": {
+                    "type": "string",
+                    "enum": [
+                      "syncrepo",
+                      "delete",
+                      "upgrade",
+                      "lock_server",
+                      "unlock_server",
+                      "mark_for_maintenance",
+                      "unmark_for_maintenance"
+                    ],
+                    "description": "Type of operation to perform."
+                  },
+                  "server_list": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "A list of server uuids."
+                  },
+                  "credentials": {
+                    "type": "object",
+                    "description": "Username and Password (Only required for Upgrade operation)",
+                    "properties": {
+                      "username": {
+                        "type": "string"
+                      },
+                      "password": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Operation completed successfully."
+          },
+          "207": {
+            "description": "Either all or some operations failed"
+          },
+          "400": {
+            "description": "Invalid input data or missing required fields. Any unexpected Exception."
+          },
+          "401": {
+            "description": "Unauthorized, user not logged in."
+          }
+        }
+      }
+    },
+    "/library/rest/viewmachinelist/": {
+      "get": {
+        "summary": "Retrieve a list of libraries",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filters libraries whose UUID contains the given string."
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filters libraries whose name contains the given string."
+          },
+          {
+            "name": "description",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filters libraries whose description contains the given string."
+          },
+          {
+            "name": "cpus",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filters libraries with the exact CPU count."
+          },
+          {
+            "name": "ram",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filters libraries with the exact RAM size."
+          },
+          {
+            "name": "ram_min",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filters libraries with at least the specified RAM size."
+          },
+          {
+            "name": "ram_max",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filters libraries with at most the specified RAM size."
+          },
+          {
+            "name": "hvm_type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "arch",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "boot",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "console",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hw_version",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "is64",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filters libraries based on 64-bit architecture."
+          },
+          {
+            "name": "is_uefi",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filters libraries that support UEFI."
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disk_size",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "nvram_size",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "nvram_uuid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "disk_size_min",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "disk_size_max",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "disk_uuid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mac",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "iso",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "created_start_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filters libraries created after the specified date."
+          },
+          {
+            "name": "created_end_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Filters libraries created before the specified date."
+          },
+          {
+            "name": "created_date_range",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "yesterday",
+                "week",
+                "month",
+                "year"
+              ]
+            },
+            "description": "Filters libraries within a time range."
+          },
+          {
+            "name": "_sessionid",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_session_name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "_session_created_on",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "compliance_state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "A search term to filter the results."
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "hw__ram",
+                "ctime",
+                "sw__os",
+                "-name",
+                "-hw__ram",
+                "-ctime",
+                "-sw__os"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "A page number within the paginated result set."
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Number of results to return per page."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "my",
+                "public"
+              ]
+            }
+          },
+          {
+            "name": "fetch_all_revs",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "If 'true', returns all Libraries of any revision matching the filter."
+          },
+          {
+            "name": "protected",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "If 'true', returns all those Libraries that are marked protected."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of libraries successfully retrieved."
+          },
+          "400": {
+            "description": "Invalid request parameters."
+          },
+          "401": {
+            "description": "Unauthorized - User is not authenticated."
+          }
+        }
+      }
+    }
+  }
+}
